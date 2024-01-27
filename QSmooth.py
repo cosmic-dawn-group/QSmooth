@@ -91,7 +91,7 @@ def mask_SDSS(filename,path=None):
 
     spec = fits.open(str(path)+str(filename))
     data = spec[1].data
-    mask = np.zeros(len(data['loglam']), dtype=np.int)
+    mask = np.zeros(len(data['loglam']), dtype=int)
     for i in range(1,len(data['loglam'])):
         if data['and_mask'][i] != 0:
             mask[i] = 1	
@@ -132,7 +132,7 @@ def smooth(x,y,y_err,mask=[],bin_s=20,shuf=10,Lya=True):
 	# 3. Apply RANSAC to detect outlying pixels (absorption features) and mask them out.
 	# Note: we weigh the raw data points according to their errors.
     mad = np.average(np.abs(np.median(linear_y)-linear_y),weights=np.divide(y_err,np.sum(y_err)))
-    ransac = linear_model.RANSACRegressor(random_state=0,loss='absolute_loss',residual_threshold=2.0*mad)
+    ransac = linear_model.RANSACRegressor(random_state=0, loss='absolute_error', residual_threshold=2.0*mad)
     ransac.fit(x.reshape(len(x),1), linear_y,sample_weight=np.abs(y_err))
     inlier_mask = ransac.inlier_mask_
     outlier_mask = np.logical_not(inlier_mask)
