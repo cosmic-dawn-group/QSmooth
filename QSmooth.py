@@ -12,15 +12,12 @@
 
 ##########################################
 
-import os
-from astropy.io import fits
-from scipy import interpolate
-import pandas as pd
 import numpy as np
+from astropy.io import fits
 from csaps import csaps
+from scipy import interpolate
 from scipy.signal import find_peaks
 from sklearn import linear_model
-import matplotlib.pyplot as plt
 
 
 def open_calibrate_fits(filename,path):
@@ -96,13 +93,13 @@ def mask_SDSS(filename,path=None):
         if data['and_mask'][i] != 0:
             mask[i] = 1	
             # If in vicinity of SDSS sky lines, then mask out. Can adjust absolute tolerance as required.
-            if np.isclose(data['loglam'][i],3.7465,atol=0.002) == True:
+            if np.isclose(data['loglam'][i],3.7465,atol=0.002):
                 mask[i] = 1
-            if np.isclose(data['loglam'][i],3.7705,atol=0.002) == True:
+            if np.isclose(data['loglam'][i],3.7705,atol=0.002):
                 mask[i] = 1
-            if np.isclose(data['loglam'][i],3.7995,atol=0.002) == True:
+            if np.isclose(data['loglam'][i],3.7995,atol=0.002):
                 mask[i] = 1
-            if np.isclose(data['loglam'][i],3.8601,atol=0.002) == True:
+            if np.isclose(data['loglam'][i],3.8601,atol=0.002):
                 mask[i] = 1
     mask_bool = mask==0
     spec.close()
@@ -128,14 +125,13 @@ def smooth(x,y,y_err,mask=[],bin_s=20,shuf=10,Lya=True):
     # 2. Subtract the envelope from raw data points to linearize the data:
     linear_y = y - f(x)
     linear_y = np.nan_to_num(linear_y)
-    y_err[np.isnan(y_err)]=0.5 # Sufficiently small weight
+    y_err[~np.isfinite(y_err)]=0.5 # Sufficiently small weight
 	# 3. Apply RANSAC to detect outlying pixels (absorption features) and mask them out.
 	# Note: we weigh the raw data points according to their errors.
     mad = np.average(np.abs(np.median(linear_y)-linear_y),weights=np.divide(y_err,np.sum(y_err)))
     ransac = linear_model.RANSACRegressor(random_state=0, loss='absolute_error', residual_threshold=2.0*mad)
     ransac.fit(x.reshape(len(x),1), linear_y,sample_weight=np.abs(y_err))
     inlier_mask = ransac.inlier_mask_
-    outlier_mask = np.logical_not(inlier_mask)
 
     #4. smooth the inlier data points
     [xx,yy] = running_median(x[inlier_mask],y[inlier_mask],bin_size=bin_s,shuffle=shuf,Lya=Lya)
